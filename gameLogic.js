@@ -3,6 +3,7 @@
 class GameLogic {
     constructor() {
         this.state = {
+            points: 0,
             numTilesTurned: 1,
             turnedId: 0,
             pending: false,
@@ -51,6 +52,7 @@ class GameLogic {
     _updateCompleteTiles(tile1, tile2) {
         this.state.tiles[tile1].complete = true;
         this.state.tiles[tile2].complete = true;
+        this.state.points++;
     }
 
     turnTile(tileId) {
