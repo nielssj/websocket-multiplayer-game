@@ -2,10 +2,10 @@
 
 class GameLogic {
     constructor() {
+        this.numTilesTurned = 1;
+        this.turnedId = 0;
         this.state = {
             points: 0,
-            numTilesTurned: 1,
-            turnedId: 0,
             pending: false,
             tiles: [
                 {name: "green", turned: true, complete: false},
@@ -32,7 +32,7 @@ class GameLogic {
             turned: true,
             complete: false
         };
-        this.state.numTilesTurned++;
+        this.numTilesTurned++;
     }
 
     _updateResetTiles() {
@@ -45,8 +45,8 @@ class GameLogic {
                 };
             }
         }.bind(this));
-        this.state.numTilesTurned = 0;
-        this.state.turnedId = -1;
+        this.numTilesTurned = 0;
+        this.turnedId = -1;
     }
 
     _updateCompleteTiles(tile1, tile2) {
@@ -60,9 +60,9 @@ class GameLogic {
             // If no pending move
             if(!this.state.pending) {
                 // If no tiles already turned, turn a tile
-                if(this.state.numTilesTurned == 0) {
+                if(this.numTilesTurned == 0) {
                     this._updateTurnTile(tileId);
-                    this.state.turnedId = tileId;
+                    this.turnedId = tileId;
                     resolve(this.state);
                     // Otherwise, depends on whether we have a match with existing turned tile
                 } else {
@@ -70,8 +70,8 @@ class GameLogic {
                     this._updateTurnTile(tileId);
                     resolve(this.state);
                     // If matching existing turned tile, complete tiles and reset
-                    if(this.answer[tileId].name === this.answer[this.state.turnedId].name) {
-                        this._updateCompleteTiles(tileId, this.state.turnedId);
+                    if(this.answer[tileId].name === this.answer[this.turnedId].name) {
+                        this._updateCompleteTiles(tileId, this.turnedId);
                         this._updateResetTiles();
                     // Otherwise, give 1 second delay for memorization and then reset
                     } else {
