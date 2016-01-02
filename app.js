@@ -11,12 +11,12 @@ var app = express()
 
 var games = {};
 var defaultId = "aa051eca-0dbb-4911-8351-f6deb9ad3b45";
-games[defaultId] = new GameLogic(defaultId);
+games[defaultId] = new GameLogic(8, defaultId);
 
 app.post('/memory/game', function(req, res) {
     console.log("New game initiated");
 
-    let game = new GameLogic();
+    let game = new GameLogic(8);
     games[game.state.id] = game;
 
     res.send(game.getState());

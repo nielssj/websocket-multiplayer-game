@@ -1,28 +1,37 @@
 "use strict";
 
 var nodeUUID = require('node-uuid');
+var _ = require('lodash');
+
+var COLORS = ["#00FF4C", "#E8D50C", "#FF5E00", "#DB0CE8", "#0D60FF", "#ACFF54", "#E8B040", "#FF5654", "#8056E8", "#47F9FF" ];
 
 class GameLogic {
-    constructor(id) {
-        this.numTilesTurned = 1;
+    constructor(size, id) {
+        // Initialize default game state
+        this.numTilesTurned = 0;
         this.turnedId = 0;
         this.state = {
             id: id ? id : nodeUUID.v4(),
             points: 0,
             pending: false,
-            tiles: [
-                {name: "green", turned: true, completed: false},
-                {turned: false, completed: false},
-                {turned: false, completed: false},
-                {turned: false, completed: false}
-            ]
+            tiles: []
         };
-        this.answer = [
-            {name: "green"},
-            {name: "red"},
-            {name: "green"},
-            {name: "red"}
-        ];
+        this.answer = [];
+
+        // Populate tiles and answers
+        for (let i = 0; i < size; i++) {
+            this.state.tiles.push(
+                { turned: false, completed: false },
+                { turned: false, completed: false }
+            );
+            this.answer.push(
+                { name:COLORS[i] },
+                { name:COLORS[i] }
+            );
+        }
+
+        // Shuffle answers (make game unique)
+        this.answer = _.shuffle(this.answer);
     }
 
     getState() {
