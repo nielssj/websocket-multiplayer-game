@@ -66,9 +66,7 @@ app.post('/memory/game/:id/move', function(req, res) {
 
     if(promise) {
         promise
-            .then((result) => {
-                res.send(result);
-            })
+            .then(() => res.end())
             .catch((err) => res.status(500).send(err))
     } else {
         res.status(400).send("Invalid move type");

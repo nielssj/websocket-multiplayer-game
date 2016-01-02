@@ -81,12 +81,12 @@ class GameLogic {
                 if(this.numTilesTurned == 0) {
                     this._updateTurnTile(tileId);
                     this.turnedId = tileId;
-                    resolve(this.state);
+                    resolve();
                     // Otherwise, depends on whether we have a match with existing turned tile
                 } else {
                     // Turn new tile
                     this._updateTurnTile(tileId);
-                    resolve(this.state);
+                    resolve();
                     // If matching existing turned tile, complete tiles and reset
                     if(this.answer[tileId].name === this.answer[this.turnedId].name) {
                         this._updateCompleteTiles(tileId, this.turnedId);
