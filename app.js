@@ -3,13 +3,19 @@
 var express = require("express");
 var bodyParser = require("body-parser");
 var cors = require("cors");
+var nodehttp = require('http');
+var socketio = require("socket.io");
 var GameLogic = require("./gameLogic.js");
 
 var app = express()
     .use(bodyParser.json())
     .use(cors());
 
+var http = nodehttp.Server(app);
+var io = socketio(http);
+
 var games = {};
+var ioNamespaces = {};
 var defaultId = "aa051eca-0dbb-4911-8351-f6deb9ad3b45";
 games[defaultId] = new GameLogic(8, defaultId);
 
@@ -17,7 +23,25 @@ app.post('/memory/game', function(req, res) {
     console.log("New game initiated");
 
     let game = new GameLogic(8);
-    games[game.state.id] = game;
+    let gameId = game.state.id;
+    games[gameId] = game;
+
+    game.events.on("changed", msg => console.log("Game state changed [" + msg.id + "]"));
+
+    // Create new socket.io namespace
+    var nsp = io.of('/' + gameId);
+    nsp.on('connection', socket => {
+        // Listen for and emit all game state changes
+        let cb = function(state) {
+            socket.emit("changed", state)
+        };
+        game.events.on("changed", cb);
+        // Stop listening, if disconnect
+        socket.on("disconnect", function() {
+            game.events.removeListener("changed", cb);
+        })
+    });
+    ioNamespaces[gameId] = nsp;
 
     res.send(game.getState());
 });
@@ -34,8 +58,6 @@ app.post('/memory/game/:id/move', function(req, res) {
     let game = games[req.params.id];
     var promise = null;
 
-    console.log("Move made: " + req.body);
-
     switch(move.type) {
         case "TURN_TILE":
             promise = game.turnTile(move.tileId);
@@ -44,15 +66,16 @@ app.post('/memory/game/:id/move', function(req, res) {
 
     if(promise) {
         promise
-            .then((result) => res.send(result))
+            .then((result) => {
+                res.send(result);
+            })
             .catch((err) => res.status(500).send(err))
     } else {
         res.status(400).send("Invalid move type");
     }
 });
 
-var server = app.listen(3000, function() {
-    var host = server.address().address;
-    var port = server.address().port;
-    console.log("Example app listening at http://%s:%s", host, port);
+http.listen(3000, function() {
+    var port = http.address().port;
+    console.log("Example app listening at http://localhost:%s", port);
 });

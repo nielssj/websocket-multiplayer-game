@@ -1,5 +1,7 @@
 "use strict";
 
+var EventEmitter = require('events').EventEmitter;
+var util = require("util");
 var nodeUUID = require('node-uuid');
 var _ = require('lodash');
 
@@ -7,6 +9,8 @@ var COLORS = ["#00FF4C", "#E8D50C", "#FF5E00", "#DB0CE8", "#0D60FF", "#ACFF54", 
 
 class GameLogic {
     constructor(size, id) {
+        this.events = new EventEmitter();
+
         // Initialize default game state
         this.numTilesTurned = 0;
         this.turnedId = 0;
@@ -45,6 +49,7 @@ class GameLogic {
             completed: false
         };
         this.numTilesTurned++;
+        this.events.emit("changed", this.state);
     }
 
     _updateResetTiles() {
@@ -59,6 +64,7 @@ class GameLogic {
         }.bind(this));
         this.numTilesTurned = 0;
         this.turnedId = -1;
+        this.events.emit("changed", this.state);
     }
 
     _updateCompleteTiles(tile1, tile2) {
