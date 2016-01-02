@@ -1,3 +1,5 @@
+"use strict";
+
 var express = require("express");
 var bodyParser = require("body-parser");
 var cors = require("cors");
@@ -7,23 +9,36 @@ var app = express()
     .use(bodyParser.json())
     .use(cors());
 
-var logic = new GameLogic();
+var games = {};
+var defaultId = "aa051eca-0dbb-4911-8351-f6deb9ad3b45";
+games[defaultId] = new GameLogic(defaultId);
+
+app.post('/memory/game', function(req, res) {
+    console.log("New game initiated");
+
+    let game = new GameLogic();
+    games[game.state.id] = game;
+
+    res.send(game.getState());
+});
 
 app.get('/memory/game/:id', function(req, res) {
     console.log("Game state requested");
 
-    res.send(logic.getState());
+    let game = games[req.params.id];
+    res.send(game.getState());
 });
 
-app.post('/memory/game/move', function(req, res) {
+app.post('/memory/game/:id/move', function(req, res) {
     var move = req.body;
+    let game = games[req.params.id];
     var promise = null;
 
     console.log("Move made: " + req.body);
 
     switch(move.type) {
         case "TURN_TILE":
-            promise = logic.turnTile(move.tileId);
+            promise = game.turnTile(move.tileId);
             break;
     }
 

@@ -1,10 +1,13 @@
 "use strict";
 
+var nodeUUID = require('node-uuid');
+
 class GameLogic {
-    constructor() {
+    constructor(id) {
         this.numTilesTurned = 1;
         this.turnedId = 0;
         this.state = {
+            id: id ? id : nodeUUID.v4(),
             points: 0,
             pending: false,
             tiles: [
