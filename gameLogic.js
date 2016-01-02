@@ -8,10 +8,10 @@ class GameLogic {
             points: 0,
             pending: false,
             tiles: [
-                {name: "green", turned: true, complete: false},
-                {turned: false, complete: false},
-                {turned: false, complete: false},
-                {turned: false, complete: false}
+                {name: "green", turned: true, completed: false},
+                {turned: false, completed: false},
+                {turned: false, completed: false},
+                {turned: false, completed: false}
             ]
         };
         this.answer = [
@@ -30,7 +30,7 @@ class GameLogic {
         this.state.tiles[tileId] = {
             name: this.answer[tileId].name,
             turned: true,
-            complete: false
+            completed: false
         };
         this.numTilesTurned++;
     }
@@ -38,10 +38,10 @@ class GameLogic {
     _updateResetTiles() {
         let tiles = this.state.tiles;
         tiles.forEach(function(tile, id) {
-            if(tile.turned && !tile.complete) {
+            if(tile.turned && !tile.completed) {
                 this.state.tiles[id] = {
                     turned: false,
-                    complete: false
+                    completed: false
                 };
             }
         }.bind(this));
@@ -50,8 +50,8 @@ class GameLogic {
     }
 
     _updateCompleteTiles(tile1, tile2) {
-        this.state.tiles[tile1].complete = true;
-        this.state.tiles[tile2].complete = true;
+        this.state.tiles[tile1].completed = true;
+        this.state.tiles[tile2].completed = true;
         this.state.points++;
     }
 
