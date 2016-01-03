@@ -6,10 +6,14 @@ var cors = require("cors");
 var nodehttp = require('http');
 var socketio = require("socket.io");
 var GameLogic = require("./gameLogic.js");
+var authentication = require("./authentication");
 
 var app = express()
     .use(bodyParser.json())
+    .use(bodyParser.urlencoded({ extended:true }))
     .use(cors());
+
+authentication(app);
 
 var http = nodehttp.Server(app);
 var io = socketio(http);
