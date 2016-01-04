@@ -10,7 +10,7 @@ var Authentication = function(app) {
     var User = new UserRepository();
 
     app.use(expressJWT({ secret:JWT_SECRET })
-        .unless({ path: "/login" }));
+        .unless({ path: ["/login", /^(\/memory\/game\/?[^\/]*)$/] }));
 
     app.use(function (err, req, res, next) {
         if (err.name === 'UnauthorizedError') {
@@ -25,10 +25,10 @@ var Authentication = function(app) {
                     let token = jwt.sign({ id:user.id }, JWT_SECRET);
                     res.status(200).json(token);
                 } else {
-                    res.status(401).send({ reason: "INVALID_CREDENTIALS"});
+                    res.status(401).json({ reason: "INVALID_CREDENTIALS"});
                 }
             } else {
-                res.status(401).send({ reason: "INVALID_CREDENTIALS"});
+                res.status(401).json({ reason: "INVALID_CREDENTIALS"});
             }
         })
     });
