@@ -8,7 +8,10 @@ let JWT_SECRET = "secret"; // TODO: Move secret to separate configuration
 var Authentication = function(app, User) {
 
     app.use(expressJWT({ secret:JWT_SECRET })
-        .unless({ path: ["/login", /^(\/memory\/game\/?[^\/]*)$/] }));
+        .unless({ path: [
+            "/login",
+            { url:/^(\/memory\/game\/?[^\/]*)$/, methods:["GET"] }
+        ]}));
 
     app.use(function (err, req, res, next) {
         if (err.name === 'UnauthorizedError') {
