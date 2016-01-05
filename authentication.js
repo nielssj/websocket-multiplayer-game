@@ -2,12 +2,10 @@
 
 var expressJWT = require("express-jwt");
 var jwt = require("jsonwebtoken");
-var UserRepository = require("./userRepository");
 
 let JWT_SECRET = "secret"; // TODO: Move secret to separate configuration
 
-var Authentication = function(app) {
-    var User = new UserRepository();
+var Authentication = function(app, User) {
 
     app.use(expressJWT({ secret:JWT_SECRET })
         .unless({ path: ["/login", /^(\/memory\/game\/?[^\/]*)$/] }));
