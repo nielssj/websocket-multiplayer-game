@@ -75,13 +75,14 @@ class GameLogic {
     }
 
     _isParticipant(playerId) {
-        return _.has(this.players, p => p.id = playerId);
+        return _.has(this.state.players, playerId);
     }
 
     turnTile(tileId, playerId) {
         return new Promise(function(resolve, reject) {
             if(!this._isParticipant(playerId)) {
                 reject({ reason: "NOT_PARTICIPANT"}); // TODO: Check turn here as well
+                return;
             }
 
             // If no pending move
