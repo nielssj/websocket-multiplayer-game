@@ -24,15 +24,15 @@ var io = socketio(http);
 var games = {};
 var ioNamespaces = {};
 var defaultId = "aa051eca-0dbb-4911-8351-f6deb9ad3b45";
-games[defaultId] = new GameLogic(8, defaultId);
+games[defaultId] = new GameLogic(8, User, defaultId);
 
 app.post('/memory/game', function(req, res) {
     console.log("New game initiated");
 
-    let game = new GameLogic(8);
+    // Create game
+    let game = new GameLogic(8, User);
     let gameId = game.state.id;
     games[gameId] = game;
-
     game.events.on("changed", msg => console.log("Game state changed [" + msg.id + "]"));
 
     // Create new socket.io namespace
@@ -50,7 +50,12 @@ app.post('/memory/game', function(req, res) {
     });
     ioNamespaces[gameId] = nsp;
 
-    res.send(game.getState());
+    // Creator must join game
+    game.join(req.user.id)
+        .then(game => {
+            res.json(game.getState())
+        })
+        .catch(err => res.status(500).send(err));
 });
 
 app.get('/memory/game/:id', function(req, res) {
@@ -78,6 +83,14 @@ app.post('/memory/game/:id/move', function(req, res) {
     } else {
         res.status(400).send("Invalid move type");
     }
+});
+
+app.post('/memory/game/:id/player', function(req, res) {
+    let game = games[req.params.id];
+
+    game.join(req.user.id)
+        .then(game => res.json(game.getState()))
+        .catch(err => res.status(500).send(err));
 });
 
 http.listen(3000, function() {
