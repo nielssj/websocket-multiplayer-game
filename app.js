@@ -72,7 +72,7 @@ app.post('/memory/game/:id/move', function(req, res) {
 
     switch(move.type) {
         case "TURN_TILE":
-            promise = game.turnTile(move.tileId);
+            promise = game.turnTile(move.tileId, req.user.id);
             break;
     }
 

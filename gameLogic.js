@@ -17,7 +17,6 @@ class GameLogic {
         this.turnedId = 0;
         this.state = {
             id: id ? id : nodeUUID.v4(),
-            points: 0,
             pending: false,
             tiles: [],
             players: {}
@@ -69,14 +68,22 @@ class GameLogic {
         this.events.emit("changed", this.state);
     }
 
-    _updateCompleteTiles(tile1, tile2) {
+    _updateCompleteTiles(tile1, tile2, playerId) {
         this.state.tiles[tile1].completed = true;
         this.state.tiles[tile2].completed = true;
-        this.state.points++;
+        this.state.players[playerId].points++;
     }
 
-    turnTile(tileId) {
+    _isParticipant(playerId) {
+        return _.has(this.players, p => p.id = playerId);
+    }
+
+    turnTile(tileId, playerId) {
         return new Promise(function(resolve, reject) {
+            if(!this._isParticipant(playerId)) {
+                reject({ reason: "NOT_PARTICIPANT"}); // TODO: Check turn here as well
+            }
+
             // If no pending move
             if(!this.state.pending) {
                 // If no tiles already turned, turn a tile
@@ -91,7 +98,7 @@ class GameLogic {
                     resolve();
                     // If matching existing turned tile, complete tiles and reset
                     if(this.answer[tileId].name === this.answer[this.turnedId].name) {
-                        this._updateCompleteTiles(tileId, this.turnedId);
+                        this._updateCompleteTiles(tileId, this.turnedId, playerId);
                         this._updateResetTiles();
                     // Otherwise, give 1 second delay for memorization and then reset
                     } else {
@@ -125,9 +132,10 @@ class GameLogic {
             .then(player => {
                 let exPlayer = this.state.players[player.id];
                 if(!exPlayer) {
+                    player.points = 0;
                     this.state.players[player.id] = player;
+                    this.events.emit("changed", this.state);
                 }
-                this.events.emit("changed", this.state);
                 return this;
             });
     }
