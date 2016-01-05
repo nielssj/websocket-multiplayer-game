@@ -19,7 +19,8 @@ class GameLogic {
             id: id ? id : nodeUUID.v4(),
             pending: false,
             tiles: [],
-            players: {}
+            players: {},
+            turnPlayer: null
         };
         this.answer = [];
 
@@ -65,7 +66,6 @@ class GameLogic {
         }.bind(this));
         this.numTilesTurned = 0;
         this.turnedId = -1;
-        this.events.emit("changed", this.state);
     }
 
     _updateCompleteTiles(tile1, tile2, playerId) {
@@ -78,10 +78,31 @@ class GameLogic {
         return _.has(this.state.players, playerId);
     }
 
+    _nextTurn() {
+        let curPlayerId = this.state.turnPlayer;
+        let playerIds = Object.keys(this.state.players);
+        let currentNum = _.indexOf(playerIds, curPlayerId);
+        var newPlayerId;
+        if(currentNum + 1 < playerIds.length) {
+            newPlayerId = playerIds[currentNum + 1];
+        } else {
+            newPlayerId = playerIds[0];
+        }
+        this.state.turnPlayer = newPlayerId;
+        this.state.players[curPlayerId].hasTurn = false;
+        this.state.players[newPlayerId].hasTurn = true;
+        this.events.emit("changed", this.state);
+    }
+
     turnTile(tileId, playerId) {
         return new Promise(function(resolve, reject) {
             if(!this._isParticipant(playerId)) {
-                reject({ reason: "NOT_PARTICIPANT"}); // TODO: Check turn here as well
+                reject({ reason: "NOT_PARTICIPANT"});
+                return;
+            }
+
+            if(this.state.turnPlayer !== playerId) {
+                reject({ reason: "OTHER_PLAYER_TURN"});
                 return;
             }
 
@@ -101,12 +122,14 @@ class GameLogic {
                     if(this.answer[tileId].name === this.answer[this.turnedId].name) {
                         this._updateCompleteTiles(tileId, this.turnedId, playerId);
                         this._updateResetTiles();
+                        this._nextTurn();
                     // Otherwise, give 1 second delay for memorization and then reset
                     } else {
                         this.state.pending = true;
                         setTimeout(() => {
-                            this._updateResetTiles();
                             this.state.pending = false;
+                            this._updateResetTiles();
+                            this._nextTurn();
                         }, 1000);
                 }
             }
@@ -135,6 +158,10 @@ class GameLogic {
                 if(!exPlayer) {
                     player.points = 0;
                     this.state.players[player.id] = player;
+                    if(!this.state.turnPlayer) {
+                        player.hasTurn = true;
+                        this.state.turnPlayer = player.id;
+                    }
                     this.events.emit("changed", this.state);
                 }
                 return this;
