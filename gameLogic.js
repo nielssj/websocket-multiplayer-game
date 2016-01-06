@@ -1,6 +1,5 @@
 "use strict";
 
-var EventEmitter = require('events').EventEmitter;
 var util = require("util");
 var nodeUUID = require('node-uuid');
 var _ = require('lodash');
@@ -8,39 +7,40 @@ var _ = require('lodash');
 var COLORS = ["#00FF4C", "#E8D50C", "#FF5E00", "#DB0CE8", "#0D60FF", "#ACFF54", "#E8B040", "#FF5654", "#8056E8", "#47F9FF" ];
 
 class GameLogic {
-    constructor(size, id) {
-        this.events = new EventEmitter();
+    constructor(size, id, instance) {
+        if(!instance) {
+            // Initialize default game state
+            this.numTilesTurned = 0;
+            this.turnedId = 0;
+            this.state = {
+                pending: false,
+                tiles: [],
+                players: {},
+                turnPlayer: null
+            };
+            this.answer = [];
 
-        // Initialize default game state
-        this.numTilesTurned = 0;
-        this.turnedId = 0;
-        this.state = {
-            id: id ? id : nodeUUID.v4(),
-            pending: false,
-            tiles: [],
-            players: {},
-            turnPlayer: null
-        };
-        this.answer = [];
+            // Populate tiles and answers
+            for (let i = 0; i < size; i++) {
+                this.state.tiles.push(
+                    { turned: false, completed: false },
+                    { turned: false, completed: false }
+                );
+                this.answer.push(
+                    { name:COLORS[i] },
+                    { name:COLORS[i] }
+                );
+            }
 
-        // Populate tiles and answers
-        for (let i = 0; i < size; i++) {
-            this.state.tiles.push(
-                { turned: false, completed: false },
-                { turned: false, completed: false }
-            );
-            this.answer.push(
-                { name:COLORS[i] },
-                { name:COLORS[i] }
-            );
+            // Shuffle answers (make game unique)
+            this.answer = _.shuffle(this.answer);
+        } else {
+            _.assign(this, instance);
         }
-
-        // Shuffle answers (make game unique)
-        this.answer = _.shuffle(this.answer);
     }
 
     getState() {
-        return this.state;
+        return _.assign({id:this.id}, this.state)
     }
 
     _updateTurnTile(tileId) {
@@ -50,7 +50,6 @@ class GameLogic {
             completed: false
         };
         this.numTilesTurned++;
-        this.events.emit("changed", this.state);
     }
 
     _updateResetTiles() {
@@ -90,7 +89,6 @@ class GameLogic {
         this.state.turnPlayer = newPlayerId;
         this.state.players[curPlayerId].hasTurn = false;
         this.state.players[newPlayerId].hasTurn = true;
-        this.events.emit("changed", this.state);
     }
 
     turnTile(tileId, playerId) {
@@ -111,12 +109,11 @@ class GameLogic {
                 if(this.numTilesTurned == 0) {
                     this._updateTurnTile(tileId);
                     this.turnedId = tileId;
-                    resolve();
+                    resolve(this);
                     // Otherwise, depends on whether we have a match with existing turned tile
                 } else {
                     // Turn new tile
                     this._updateTurnTile(tileId);
-                    resolve();
                     // If matching existing turned tile, complete tiles and reset
                     if(this.answer[tileId].name === this.answer[this.turnedId].name) {
                         this._updateCompleteTiles(tileId, this.turnedId, playerId);
@@ -125,17 +122,28 @@ class GameLogic {
                     // Otherwise, give 1 second delay for memorization and then reset
                     } else {
                         this.state.pending = true;
-                        setTimeout(() => {
-                            this.state.pending = false;
-                            this._updateResetTiles();
-                            this._nextTurn();
-                        }, 1000);
-                }
+                    }
+                    resolve(this);
             }
             } else {
                 reject();
             }
         }.bind(this));
+    }
+
+    scheduleResetIfNeeded() {
+        return new Promise((resolve, reject) => {
+            if(this.state.pending === true) {
+                setTimeout(() => {
+                    this.state.pending = false;
+                    this._updateResetTiles();
+                    this._nextTurn();
+                    resolve(this);
+                }, 1000);
+            } else {
+                resolve();
+            }
+        })
     }
 
     join(player) {
@@ -147,7 +155,6 @@ class GameLogic {
                 player.hasTurn = true;
                 this.state.turnPlayer = player.id;
             }
-            this.events.emit("changed", this.state);
         }
         return this;
     }
