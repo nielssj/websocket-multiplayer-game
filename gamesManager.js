@@ -1,6 +1,8 @@
 "use strict";
 
 var GameLogic = require("./gameLogic.js");
+var url = require("url");
+var _ = require("lodash");
 
 class GamesManager {
     constructor(userBase, io) {
@@ -8,10 +10,12 @@ class GamesManager {
         this.io = io;
 
         this.games = {};
-        this.ioNamespaces = {};
 
         var defaultId = "aa051eca-0dbb-4911-8351-f6deb9ad3b45";
         this.games[defaultId] = new GameLogic(8, defaultId);
+
+        // Initiate Socket.io middleware to create game-specific namespaces upon request
+        io.use(this._createSocketNamespaceIfGameExists.bind(this))
     }
 
     createNewGame(playerId) {
@@ -22,21 +26,6 @@ class GamesManager {
 
         // Subscribe logging to state changes of game
         game.events.on("changed", msg => console.log("Game state changed [" + msg.id + "]"));
-
-        // Create new socket.io namespace
-        var nsp = this.io.of('/' + gameId);
-        nsp.on('connection', socket => {
-            // Listen for and emit all game state changes
-            let cb = function(state) {
-                socket.emit("changed", state)
-            };
-            game.events.on("changed", cb);
-            // Stop listening, if disconnect
-            socket.on("disconnect", function() {
-                game.events.removeListener("changed", cb);
-            })
-        });
-        this.ioNamespaces[gameId] = nsp;
 
         // Finally, creating player must be retrieved and join game
         return this._retrievePlayer(playerId)
@@ -84,6 +73,30 @@ class GamesManager {
                 }
             })
         }.bind(this))
+    }
+
+    _createSocketNamespaceIfGameExists(socket, next) {
+        let ns = url.parse(socket.handshake.url, true).query.ns;
+        if(_.has(this.games, ns)) {
+            if(!_.has(this.io.nsps, "/" + ns)) {
+                let nsp = this.io.of("/" + ns);
+                let game = this.games[ns];
+                nsp.on('connection', socket => {
+                    // Listen for and emit all game state changes
+                    let cb = function(state) {
+                        socket.emit("changed", state)
+                    };
+                    game.events.on("changed", cb);
+                    // Stop listening, if disconnect
+                    socket.on("disconnect", function() {
+                        game.events.removeListener("changed", cb);
+                    })
+                });
+            }
+            next();
+        } else {
+            next({ reason:"NO_SUCH_GAME"})
+        }
     }
 }
 
