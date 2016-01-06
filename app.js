@@ -5,6 +5,8 @@ var bodyParser = require("body-parser");
 var cors = require("cors");
 var nodehttp = require('http');
 var socketio = require("socket.io");
+var r = require("rethinkdb");
+
 var UserRepository = require("./userRepository");
 var authentication = require("./authentication");
 var GamesManager = require("./gamesManager");
@@ -21,7 +23,7 @@ authentication(app, userBase);
 var http = nodehttp.Server(app);
 var io = socketio(http);
 
-var gamesManager = new GamesManager(userBase, io);
+var gamesManager;
 
 app.post('/memory/game', function(req, res) {
     console.log("New game initiated");
@@ -56,10 +58,18 @@ app.post('/memory/game/:id/player', function(req, res) {
         .catch(err => errorHandling(res, err));
 });
 
-http.listen(3000, function() {
-    var port = http.address().port;
-    console.log("Example app listening at http://localhost:%s", port);
-});
+// Conncet to database
+r.connect({ host:"172.17.0.3", port:28015 })
+    .then(conn => {
+        // Initialize GamesManager
+        gamesManager = new GamesManager(userBase, io, conn);
+        // Start listening for requests
+        http.listen(3000, function() {
+            var port = http.address().port;
+            console.log("Example app listening at http://localhost:%s", port);
+        });
+    })
+    .catch(err => console.log("Failed to start server: " + err));
 
 function errorHandling(res, err) {
     switch (err.reason) {
