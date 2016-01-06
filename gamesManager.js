@@ -11,12 +11,12 @@ class GamesManager {
         this.ioNamespaces = {};
 
         var defaultId = "aa051eca-0dbb-4911-8351-f6deb9ad3b45";
-        this.games[defaultId] = new GameLogic(8, userBase, defaultId);
+        this.games[defaultId] = new GameLogic(8, defaultId);
     }
 
     createNewGame(playerId) {
         // Create game logic object
-        let game = new GameLogic(8, this.userBase);
+        let game = new GameLogic(8);
         let gameId = game.state.id;
         this.games[gameId] = game;
 
@@ -38,8 +38,9 @@ class GamesManager {
         });
         this.ioNamespaces[gameId] = nsp;
 
-        // Finally, creator must join game
-        return game.join(playerId);
+        // Finally, creating player must be retrieved and join game
+        return this._retrievePlayer(playerId)
+            .then(player => game.join(player));
     }
 
     fetchGame(gameId) {
@@ -69,7 +70,20 @@ class GamesManager {
 
     joinGame(gameId, playerId) {
         let game = this.games[gameId];
-        return game.join(playerId);
+        return this._retrievePlayer(playerId)
+            .then(player => game.join(player));
+    }
+
+    _retrievePlayer(playerId) {
+        return new Promise(function (resolve, reject) {
+            this.userBase.findOne({ id:playerId }, function (err, player) {
+                if(!err) {
+                    resolve(player)
+                } else {
+                    reject(err);
+                }
+            })
+        }.bind(this))
     }
 }
 

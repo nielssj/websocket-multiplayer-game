@@ -8,9 +8,8 @@ var _ = require('lodash');
 var COLORS = ["#00FF4C", "#E8D50C", "#FF5E00", "#DB0CE8", "#0D60FF", "#ACFF54", "#E8B040", "#FF5654", "#8056E8", "#47F9FF" ];
 
 class GameLogic {
-    constructor(size, userBase, id) {
+    constructor(size, id) {
         this.events = new EventEmitter();
-        this.userBase = userBase;
 
         // Initialize default game state
         this.numTilesTurned = 0;
@@ -139,33 +138,18 @@ class GameLogic {
         }.bind(this));
     }
 
-    _retrievePlayer(playerId) {
-        return new Promise(function (resolve, reject) {
-            this.userBase.findOne({ id:playerId }, function (err, player) {
-                if(!err) {
-                    resolve(player)
-                } else {
-                    reject(err);
-                }
-            })
-        }.bind(this))
-    }
-
-    join(playerId) {
-        return this._retrievePlayer(playerId)
-            .then(player => {
-                let exPlayer = this.state.players[player.id];
-                if(!exPlayer) {
-                    player.points = 0;
-                    this.state.players[player.id] = player;
-                    if(!this.state.turnPlayer) {
-                        player.hasTurn = true;
-                        this.state.turnPlayer = player.id;
-                    }
-                    this.events.emit("changed", this.state);
-                }
-                return this;
-            });
+    join(player) {
+        let exPlayer = this.state.players[player.id];
+        if(!exPlayer) {
+            player.points = 0;
+            this.state.players[player.id] = player;
+            if(!this.state.turnPlayer) {
+                player.hasTurn = true;
+                this.state.turnPlayer = player.id;
+            }
+            this.events.emit("changed", this.state);
+        }
+        return this;
     }
 }
 
