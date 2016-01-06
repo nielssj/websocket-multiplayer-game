@@ -1,13 +1,15 @@
 "use strict";
 
+var r = require("rethinkdb");
+var _ = require("lodash");
 var GameLogic = require("./gameLogic.js");
 var url = require("url");
-var _ = require("lodash");
 
 class GamesManager {
-    constructor(userBase, io) {
+    constructor(userBase, io, dbConn) {
         this.userBase = userBase;
         this.io = io;
+        this.dbConn = dbConn;
 
         this.games = {};
 
@@ -24,12 +26,17 @@ class GamesManager {
         let gameId = game.state.id;
         this.games[gameId] = game;
 
-        // Subscribe logging to state changes of game
-        game.events.on("changed", msg => console.log("Game state changed [" + msg.id + "]"));
-
-        // Finally, creating player must be retrieved and join game
+            // Retrieve player object of creating player
         return this._retrievePlayer(playerId)
-            .then(player => game.join(player));
+            // Join creating player to game
+            .then(player => game.join(player))
+            // Persist game state
+            .then(() => {
+                r.table("games")
+                    .insert(_.pick(game, ["answer", "state", "numTilesTurned", "turnedId"]))
+                    .run(this.dbConn);
+                return game;
+            })
     }
 
     fetchGame(gameId) {
@@ -60,7 +67,7 @@ class GamesManager {
     joinGame(gameId, playerId) {
         let game = this.games[gameId];
         return this._retrievePlayer(playerId)
-            .then(player => game.join(player));
+            .then(player => game.join(player))
     }
 
     _retrievePlayer(playerId) {
