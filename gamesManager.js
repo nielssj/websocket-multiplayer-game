@@ -63,8 +63,8 @@ class GamesManager {
             this.games.loadGame(gameId)
         ])
             .then(res => {
-                let game = res[0];
-                let player = res[1];
+                let player = res[0];
+                let game = res[1];
                 return game.join(player);
             })
             .then(game => this.games.saveGame(game));
