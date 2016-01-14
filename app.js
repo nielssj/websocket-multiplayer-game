@@ -7,7 +7,7 @@ var nodehttp = require('http');
 var socketio = require("socket.io");
 var r = require("rethinkdb");
 
-var UserRepository = require("./userRepository");
+var UserRepository = require("./db/userRepository");
 var authentication = require("./authentication");
 var GamesManager = require("./gamesManager");
 
