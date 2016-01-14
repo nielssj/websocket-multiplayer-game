@@ -1,20 +1,14 @@
 "use strict";
 
-var r = require("rethinkdb");
 var _ = require("lodash");
 var GameLogic = require("./gameLogic.js");
 var url = require("url");
 
 class GamesManager {
-    constructor(userBase, io, dbConn) {
+    constructor(userBase, io, games) {
         this.userBase = userBase;
         this.io = io;
-        this.dbConn = dbConn;
-
-        this.games = {};
-
-        var defaultId = "aa051eca-0dbb-4911-8351-f6deb9ad3b45";
-        this.games[defaultId] = new GameLogic(8, defaultId);
+        this.games = games;
 
         // Initiate Socket.io middleware to create game-specific namespaces upon request
         io.use(this._createSocketNamespaceIfGameExists.bind(this))
@@ -30,54 +24,32 @@ class GamesManager {
             .then(player => game.join(player))
             // Persist game state
             .then(() => {
-                return r.table("games")
-                    .insert(game.getFullState())
-                    .run(this.dbConn);
+                return this.games.createGame(game)
             })
-            // Return game state
-            .then((result) => {
-                let gameId = result.generated_keys[0];
-                game.id = gameId;
-                return game;
-            });
     }
 
     fetchGame(gameId) {
-        return r.table("games")
-            .get(gameId).run(this.dbConn)
-            .then(game => new GameLogic(0, null, game));
+        return this.games.loadGame(gameId);
     }
 
     makeMove(gameId, playerId, move) {
-        return r.table("games").get(gameId).run(this.dbConn)
-            .then(result => {
-                if(result) {
-                    let game = new GameLogic(0, null, result);
-                    switch(move.type) {
-                        case "TURN_TILE":
-                            return game.turnTile(move.tileId, playerId);
-                        default:
-                            throw { reason:"INVALID_MOVE" }
-                    }
-                } else {
-                    throw { reason:"GAME_NOT_FOUND" }
+        return this.games.loadGame(gameId)
+            .then(game => {
+                switch(move.type) {
+                    case "TURN_TILE":
+                        return game.turnTile(move.tileId, playerId);
+                    default:
+                        throw { reason:"INVALID_MOVE" }
                 }
             })
             .then(game => {
-                var persistGame = (game) => {
-                    return r.table("games")
-                        .get(game.id)
-                        .update(game.getFullState())
-                        .run(this.dbConn)
-                        .then(result => game)
-                };
-                return persistGame(game)
-                    .then(() => {
+                return this.games.saveGame(game)
+                    .then(game => {
                         // Schedule extra persist after reset delay, if needed
                         game.scheduleResetIfNeeded()
                             .then(game => {
                                 if(game) {
-                                    persistGame(game)
+                                    this.games.saveGame(game)
                                 }
                             });
                         return game;
@@ -86,25 +58,16 @@ class GamesManager {
     }
 
     joinGame(gameId, playerId) {
-        return this._retrievePlayer(playerId)
-            .then(player =>
-                r.table("games").get(gameId).run(this.dbConn)
-                    .then(game => {
-                        return {
-                            player:player,
-                            game: new GameLogic(0, null, game)
-                        }
-                    })
-            )
+        return Promise.all([
+            this._retrievePlayer(playerId),
+            this.games.loadGame(gameId)
+        ])
             .then(res => {
-                return res.game.join(res.player)
+                let game = res[0];
+                let player = res[1];
+                return game.join(player);
             })
-            .then(game => r.table("games")
-                .get(game.id)
-                .update(game.getFullState())
-                .run(this.dbConn)
-                .then(result => game)
-            );
+            .then(game => this.games.saveGame(game));
     }
 
     _retrievePlayer(playerId) {
@@ -120,34 +83,28 @@ class GamesManager {
     }
 
     _createSocketNamespaceIfGameExists(socket, next) {
-        let ns = url.parse(socket.handshake.url, true).query.ns;
-        r.table("games").get(ns).run(this.dbConn)
-            .then(result => {
-                if(result) {
-                    if(!_.has(this.io.nsps, "/" + ns)) {
-                        let nsp = this.io.of("/" + ns);
-                        nsp.on('connection', socket => {
-                            r.table("games").get(ns).changes()
-                                .run(this.dbConn, function(err, cursor) {
-                                    // Emit all changes to socket
-                                    cursor.each(function(err, change) {
-                                        if(!err) {
-                                            let game = new GameLogic(0, null, change.new_val);
-                                            socket.emit("changed", game.getPublicState())
-                                        }
-                                    });
-                                    // Stop listening, if disconnect
-                                    socket.on("disconnect", function() {
-                                        cursor.close();
-                                    })
-                                });
+        let gameId = url.parse(socket.handshake.url, true).query.ns;
+        this.games.loadGame(gameId)
+            .then(game => {
+                if(!_.has(this.io.nsps, "/" + gameId)) {
+                    let nsp = this.io.of("/" + gameId);
+                    nsp.on('connection', socket => {
+                        this.games.streamGameChanges(gameId, function(err, game) {
+                            if(!err) {
+                                socket.emit("changed", game.getPublicState())
+                            } else {
+                                throw err;
+                            }
+                        }, function(err, stream) {
+                            socket.on("disconnect", function() {
+                                stream.close();
+                            })
                         });
-                    }
-                   next();
-                } else {
-                   next({ reason:"NO_SUCH_GAME"})
+                    });
                 }
-            });
+                next();
+            })
+            .catch(err => next(err));
     }
 }
 

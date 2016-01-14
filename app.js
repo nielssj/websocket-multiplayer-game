@@ -8,6 +8,7 @@ var socketio = require("socket.io");
 var r = require("rethinkdb");
 
 var UserRepository = require("./db/userRepository");
+var GameRepository = require("./db/gameRepository");
 var authentication = require("./authentication");
 var GamesManager = require("./gamesManager");
 
@@ -23,6 +24,7 @@ authentication(app, userBase);
 var http = nodehttp.Server(app);
 var io = socketio(http);
 
+var games;
 var gamesManager;
 
 app.post('/memory/game', function(req, res) {
@@ -76,7 +78,8 @@ app.get('/memory/player', function(req, res) {
 r.connect({ host:"172.17.0.2", port:28015 })
     .then(conn => {
         // Initialize GamesManager
-        gamesManager = new GamesManager(userBase, io, conn);
+        games = new GameRepository(conn);
+        gamesManager = new GamesManager(userBase, io, games);
         // Start listening for requests
         http.listen(3000, function() {
             var port = http.address().port;
