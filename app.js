@@ -58,8 +58,22 @@ app.post('/memory/game/:id/player', function(req, res) {
         .catch(err => errorHandling(res, err));
 });
 
+app.get('/memory/player', function(req, res) {
+    let playerId = req.user.id;
+    userBase.findOne({id:playerId}, function(err, user) {
+        if(!err && user) {
+            res.json(user);
+        } else if (!err) {
+            errorHandling(res, {reason: "USER_NOT_FOUND"})
+        }
+        else {
+            errorHandling(res, err);
+        }
+    })
+});
+
 // Conncet to database
-r.connect({ host:"172.17.0.3", port:28015 })
+r.connect({ host:"172.17.0.2", port:28015 })
     .then(conn => {
         // Initialize GamesManager
         gamesManager = new GamesManager(userBase, io, conn);
@@ -72,16 +86,23 @@ r.connect({ host:"172.17.0.3", port:28015 })
     .catch(err => console.log("Failed to start server: " + err));
 
 function errorHandling(res, err) {
-    switch (err.reason) {
-        case "INVALID_MOVE":
-            res.status(400).json(err);
-            return;
-        case "OTHER_PLAYER_TURN":
-        case "NOT_PARTICIPANT":
-            res.status(403).json(err);
-            return;
-        default:
-            res.status(500).send(err);
-            return;
+    if(err) {
+        switch (err.reason) {
+            case "INVALID_MOVE":
+                res.status(400).json(err);
+                return;
+            case "OTHER_PLAYER_TURN":
+            case "NOT_PARTICIPANT":
+                res.status(403).json(err);
+                return;
+            case "USER_NOT_FOUND":
+                res.status(404).json(err);
+                return;
+            default:
+                res.status(500).send(err);
+                return;
+        }
+    } else {
+        res.status(500).send();
     }
 }
