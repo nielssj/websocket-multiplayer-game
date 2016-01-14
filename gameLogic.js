@@ -39,7 +39,7 @@ class GameLogic {
         }
     }
 
-    getState() {
+    getPublicState() {
         return _.assign({id:this.id}, this.state)
     }
 

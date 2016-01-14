@@ -133,7 +133,7 @@ class GamesManager {
                                     cursor.each(function(err, change) {
                                         if(!err) {
                                             let game = new GameLogic(0, null, change.new_val);
-                                            socket.emit("changed", game.getState())
+                                            socket.emit("changed", game.getPublicState())
                                         }
                                     });
                                     // Stop listening, if disconnect
