@@ -31,7 +31,7 @@ class GamesManager {
             // Persist game state
             .then(() => {
                 return r.table("games")
-                    .insert(_.pick(game, ["answer", "state", "numTilesTurned", "turnedId"]))
+                    .insert(game.getFullState())
                     .run(this.dbConn);
             })
             // Return game state
@@ -67,7 +67,7 @@ class GamesManager {
                 var persistGame = (game) => {
                     return r.table("games")
                         .get(game.id)
-                        .update(_.pick(game, ["answer", "state", "numTilesTurned", "turnedId"]))
+                        .update(game.getFullState())
                         .run(this.dbConn)
                         .then(result => game)
                 };
@@ -101,7 +101,7 @@ class GamesManager {
             })
             .then(game => r.table("games")
                 .get(game.id)
-                .update(_.pick(game, ["answer", "state", "numTilesTurned", "turnedId"]))
+                .update(game.getFullState())
                 .run(this.dbConn)
                 .then(result => game)
             );

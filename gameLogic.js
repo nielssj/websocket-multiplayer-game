@@ -43,6 +43,10 @@ class GameLogic {
         return _.assign({id:this.id}, this.state)
     }
 
+    getFullState() {
+        return _.pick(this, ["answer", "state", "numTilesTurned", "turnedId"]);
+    }
+
     _updateTurnTile(tileId) {
         this.state.tiles[tileId] = {
             name: this.answer[tileId].name,
