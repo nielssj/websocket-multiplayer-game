@@ -9,8 +9,11 @@ var r = require("rethinkdb");
 
 var UserRepository = require("./db/userRepository");
 var GameRepository = require("./db/gameRepository");
-var authentication = require("./handlers/authentication");
+
 var GamesManager = require("./gamesManager");
+
+var authentication = require("./handlers/authentication");
+var memoryHandler = require("./handlers/gamesHandler");
 
 var app = express()
     .use(bodyParser.json())
@@ -23,39 +26,6 @@ var io = socketio(http);
 var users;
 var games;
 var gamesManager;
-
-app.post('/memory/game', function(req, res) {
-    console.log("New game initiated");
-    let playerId = req.user.id;
-    gamesManager.createNewGame(playerId)
-        .then(game => res.json(game.getPublicState()))
-        .catch(err => errorHandling(res, err));
-});
-
-app.get('/memory/game/:id', function(req, res) {
-    console.log("Game state requested");
-    let gameId = req.params.id;
-    gamesManager.fetchGame(gameId)
-        .then(game => res.json(game.getPublicState()))
-        .catch(err => errorHandling(res, err));
-});
-
-app.post('/memory/game/:id/move', function(req, res) {
-    let gameId = req.params.id;
-    let playerId = req.user.id;
-    let move = req.body;
-    gamesManager.makeMove(gameId, playerId, move)
-        .then(() => res.end())
-        .catch(err => errorHandling(res, err));
-});
-
-app.post('/memory/game/:id/player', function(req, res) {
-    let gameId = req.params.id;
-    let playerId = req.user.id;
-    gamesManager.joinGame(gameId, playerId)
-        .then(game => res.json(game.getPublicState()))
-        .catch(err => errorHandling(res, err));
-});
 
 app.get('/memory/player', function(req, res) {
     let playerId = req.user.id;
@@ -72,10 +42,11 @@ r.connect({ host:"172.17.0.2", port:28015 })
         // Initialize repositories
         games = new GameRepository(conn);
         users = new UserRepository(conn);
-        // Initialize authorization
-        authentication(app, users);
         // Initialize GamesManager
         gamesManager = new GamesManager(users, io, games);
+        // Initialize handlers
+        authentication(app, users);
+        memoryHandler(app, gamesManager);
         // Start listening for requests
         http.listen(3000, function() {
             var port = http.address().port;
