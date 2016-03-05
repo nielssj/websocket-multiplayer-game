@@ -9,7 +9,7 @@ var r = require("rethinkdb");
 
 var UserRepository = require("./db/userRepository");
 var GameRepository = require("./db/gameRepository");
-var authentication = require("./authentication");
+var authentication = require("./handlers/authentication");
 var GamesManager = require("./gamesManager");
 
 var app = express()
