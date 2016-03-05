@@ -12,18 +12,15 @@ var GameRepository = require("./db/gameRepository");
 var authentication = require("./authentication");
 var GamesManager = require("./gamesManager");
 
-var userBase = new UserRepository();
-
 var app = express()
     .use(bodyParser.json())
     .use(bodyParser.urlencoded({ extended:true }))
     .use(cors());
 
-authentication(app, userBase);
-
 var http = nodehttp.Server(app);
 var io = socketio(http);
 
+var users;
 var games;
 var gamesManager;
 
@@ -62,24 +59,23 @@ app.post('/memory/game/:id/player', function(req, res) {
 
 app.get('/memory/player', function(req, res) {
     let playerId = req.user.id;
-    userBase.findOne({id:playerId}, function(err, user) {
-        if(!err && user) {
-            res.json(user);
-        } else if (!err) {
-            errorHandling(res, {reason: "USER_NOT_FOUND"})
-        }
-        else {
+    users.findOne({id:playerId})
+        .then(res.json)
+        .catch(err => {
             errorHandling(res, err);
-        }
-    })
+        });
 });
 
 // Conncet to database
 r.connect({ host:"172.17.0.2", port:28015 })
     .then(conn => {
-        // Initialize GamesManager
+        // Initialize repositories
         games = new GameRepository(conn);
-        gamesManager = new GamesManager(userBase, io, games);
+        users = new UserRepository(conn);
+        // Initialize authorization
+        authentication(app, users);
+        // Initialize GamesManager
+        gamesManager = new GamesManager(users, io, games);
         // Start listening for requests
         http.listen(3000, function() {
             var port = http.address().port;

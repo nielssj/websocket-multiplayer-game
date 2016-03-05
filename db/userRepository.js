@@ -1,9 +1,12 @@
 "use strict";
 
+var r = require("rethinkdb");
 var _ = require("lodash");
 
 class UserRepository {
-    constructor() {
+    constructor(conn) {
+        this.conn = conn;
+
         this.users = {
             john: {
                 id: "36ecb365-bc76-41f7-b8ba-8ccd1d4993cc",
@@ -20,38 +23,43 @@ class UserRepository {
         };
     }
 
-    findOne(query, cb) {
-        try {
-            let user = null;
-            if(query.username) {
-                user = this.users[query.username];
-            } else if(query.id) {
-                user = _.find(this.users, u => u.id === query.id);
-            }
-
-            if(user) {
-                cb(null, user);
-            } else {
-                cb();
-            }
-        } catch (err) {
-            console.error("Failed to find user: " + err);
-            cb(err);
+    findOne(query) {
+        if(query.id) {
+            return r.table("users")
+                .get(query.id)
+                .without("password")
+                .run(this.conn)
+                .catch(error => {
+                    if(error.name === "ReqlNonExistenceError") {
+                        throw { reason:"USER_NOT_FOUND" }
+                    }
+                })
+        }
+        if(query.username) {
+            return r.table("users")
+                .getAll(query.username, {index: "username"})
+                .without("password")
+                .nth(0)
+                .run(this.conn)
+                .catch(error => {
+                    if(error.name === "ReqlNonExistenceError") {
+                        throw { reason:"USER_NOT_FOUND" }
+                    }
+                })
         }
     }
 
-    verifyPassword(user, password) {
-        try {
-            let truePassword = this.passwords[user.id];
-            if(truePassword) {
-                return truePassword === password;
-            } else {
-                return false;
-            }
-        } catch (err) {
-            console.error("Failed to verify password: " + err);
-            return false;
-        }
+    verifyPassword(username, password) {
+        return r.table("users")
+            .filter({ username:username, password:password })
+            .without("password")
+            .nth(0)
+            .run(this.conn)
+            .catch(error => {
+                if(error.name === "ReqlNonExistenceError") {
+                    throw { reason:"INVALID_CREDENTIALS" }
+                }
+            });
     }
 
 }

@@ -5,7 +5,7 @@ var jwt = require("jsonwebtoken");
 
 let JWT_SECRET = "secret"; // TODO: Move secret to separate configuration
 
-var Authentication = function(app, User) {
+var Authentication = function(app, users) {
 
     app.use(expressJWT({ secret:JWT_SECRET })
         .unless({ path: [
@@ -20,18 +20,16 @@ var Authentication = function(app, User) {
     });
 
     app.post("/login", function(req, res) {
-        User.findOne({username: req.body.username}, function(err, user) {
-            if(user) {
-                if(User.verifyPassword(user, req.body.password)) {
-                    let token = jwt.sign({ id:user.id }, JWT_SECRET);
-                    res.status(200).json(token);
-                } else {
-                    res.status(401).json({ reason: "INVALID_CREDENTIALS"});
+        users.verifyPassword(req.body.username, req.body.password)
+            .then(user => {
+                let token = jwt.sign({ id:user.id }, JWT_SECRET);
+                res.status(200).json(token);
+            })
+            .catch(error => {
+                if(error.reason === "INVALID_CREDENTIALS") {
+                    res.status(401).json(error);
                 }
-            } else {
-                res.status(401).json({ reason: "INVALID_CREDENTIALS"});
-            }
-        })
+            });
     });
 }
 

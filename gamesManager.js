@@ -5,8 +5,8 @@ var GameLogic = require("./gameLogic.js");
 var url = require("url");
 
 class GamesManager {
-    constructor(userBase, io, games) {
-        this.userBase = userBase;
+    constructor(users, io, games) {
+        this.users = users;
         this.io = io;
         this.games = games;
 
@@ -19,7 +19,7 @@ class GamesManager {
         let game = new GameLogic(8);
 
             // Retrieve player object of creating player
-        return this._retrievePlayer(playerId)
+        return this.users.findOne({ id:playerId })
             // Join creating player to game
             .then(player => game.join(player))
             // Persist game state
@@ -59,7 +59,7 @@ class GamesManager {
 
     joinGame(gameId, playerId) {
         return Promise.all([
-            this._retrievePlayer(playerId),
+            this.users.findOne({ id:playerId }),
             this.games.loadGame(gameId)
         ])
             .then(res => {
@@ -68,18 +68,6 @@ class GamesManager {
                 return game.join(player);
             })
             .then(game => this.games.saveGame(game));
-    }
-
-    _retrievePlayer(playerId) {
-        return new Promise(function (resolve, reject) {
-            this.userBase.findOne({ id:playerId }, function (err, player) {
-                if(!err) {
-                    resolve(player)
-                } else {
-                    reject(err);
-                }
-            })
-        }.bind(this))
     }
 
     _createSocketNamespaceIfGameExists(socket, next) {
