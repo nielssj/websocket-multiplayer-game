@@ -1,9 +1,7 @@
-"use strict";
+const expressJWT = require("express-jwt");
+const jwt = require("jsonwebtoken");
 
-var expressJWT = require("express-jwt");
-var jwt = require("jsonwebtoken");
-
-let JWT_SECRET = "secret"; // TODO: Move secret to separate configuration
+const JWT_SECRET = "secret"; // TODO: Move secret to separate configuration
 
 var Authentication = function(app, users) {
 

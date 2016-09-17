@@ -1,7 +1,5 @@
-"use strict";
-
-var r = require("rethinkdb");
-var GameLogic = require("../gameLogic.js");
+const r = require("rethinkdb");
+const GameLogic = require("../gameLogic.js");
 
 class GameRepository {
     constructor(conn) {

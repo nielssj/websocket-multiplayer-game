@@ -1,10 +1,8 @@
-"use strict";
+const expect = require("unexpected");
+const r = require("rethinkdb");
+const UserRepository = require("../db/userRepository");
 
-var expect = require("unexpected");
-var r = require("rethinkdb");
-var UserRepository = require("../db/userRepository");
-
-var users;
+let users;
 
 before(function() {
     return r.connect({ host:"172.17.0.2", port:28015 })

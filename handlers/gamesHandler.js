@@ -1,6 +1,4 @@
-"use strict";
-
-var MemoryHandler = function(app, gamesManager) {
+const MemoryHandler = function(app, gamesManager) {
     app.post('/memory/game', function(req, res, next) {
         console.log("New game initiated");
         let playerId = req.user.id;

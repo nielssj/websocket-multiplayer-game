@@ -1,8 +1,6 @@
-"use strict";
-
-var _ = require("lodash");
-var GameLogic = require("./gameLogic.js");
-var url = require("url");
+let _ = require("lodash");
+let GameLogic = require("./gameLogic.js");
+let url = require("url");
 
 class GamesManager {
     constructor(users, io, games) {

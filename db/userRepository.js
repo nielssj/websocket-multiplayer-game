@@ -1,7 +1,5 @@
-"use strict";
-
-var r = require("rethinkdb");
-var _ = require("lodash");
+const r = require("rethinkdb");
+const _ = require("lodash");
 
 class UserRepository {
     constructor(conn) {

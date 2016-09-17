@@ -1,31 +1,29 @@
-"use strict";
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const nodehttp = require('http');
+const socketio = require("socket.io");
+const r = require("rethinkdb");
 
-var express = require("express");
-var bodyParser = require("body-parser");
-var cors = require("cors");
-var nodehttp = require('http');
-var socketio = require("socket.io");
-var r = require("rethinkdb");
+const UserRepository = require("./db/userRepository");
+const GameRepository = require("./db/gameRepository");
 
-var UserRepository = require("./db/userRepository");
-var GameRepository = require("./db/gameRepository");
+const GamesManager = require("./gamesManager");
 
-var GamesManager = require("./gamesManager");
+const authentication = require("./handlers/authentication");
+const memoryHandler = require("./handlers/gamesHandler");
 
-var authentication = require("./handlers/authentication");
-var memoryHandler = require("./handlers/gamesHandler");
-
-var app = express()
+const app = express()
     .use(bodyParser.json())
     .use(bodyParser.urlencoded({ extended:true }))
     .use(cors());
 
-var http = nodehttp.Server(app);
-var io = socketio(http);
+const http = nodehttp.Server(app);
+const io = socketio(http);
 
-var users;
-var games;
-var gamesManager;
+let users;
+let games;
+let gamesManager;
 
 app.get('/memory/player', function(req, res, next) {
     let playerId = req.user.id;
@@ -49,7 +47,7 @@ r.connect({ host:"localhost", port:28015 })
         app.use(errorHandling);
         // Start listening for requests
         http.listen(3000, function() {
-            var port = http.address().port;
+            const port = http.address().port;
             console.log("Example app listening at http://localhost:%s", port);
         });
     })

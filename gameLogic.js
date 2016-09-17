@@ -1,10 +1,8 @@
-"use strict";
+const util = require("util");
+const nodeUUID = require('node-uuid');
+const _ = require('lodash');
 
-var util = require("util");
-var nodeUUID = require('node-uuid');
-var _ = require('lodash');
-
-var COLORS = ["#00FF4C", "#E8D50C", "#FF5E00", "#DB0CE8", "#0D60FF", "#ACFF54", "#E8B040", "#FF5654", "#8056E8", "#47F9FF" ];
+const COLORS = ["#00FF4C", "#E8D50C", "#FF5E00", "#DB0CE8", "#0D60FF", "#ACFF54", "#E8B040", "#FF5654", "#8056E8", "#47F9FF" ];
 
 class GameLogic {
     constructor(size, id, instance) {
@@ -84,7 +82,7 @@ class GameLogic {
         let curPlayerId = this.state.turnPlayer;
         let playerIds = Object.keys(this.state.players);
         let currentNum = _.indexOf(playerIds, curPlayerId);
-        var newPlayerId;
+        let newPlayerId;
         if(currentNum + 1 < playerIds.length) {
             newPlayerId = playerIds[currentNum + 1];
         } else {
