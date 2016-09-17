@@ -7,3 +7,9 @@ Recreational project exploring use of websockets and RethinkDB to implement a re
 ## Client
 See other repo for client (react-redux):
 https://github.com/nielssj/websocket-multiplayer-game-client
+
+## Usage
+```text
+npm install
+npm start
+```
