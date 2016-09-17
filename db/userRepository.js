@@ -59,6 +59,7 @@ class UserRepository {
                 if(error.name === "ReqlNonExistenceError") {
                     throw { reason:"INVALID_CREDENTIALS" }
                 }
+                throw error
             });
     }
 

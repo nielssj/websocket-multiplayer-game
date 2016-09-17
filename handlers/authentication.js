@@ -15,21 +15,18 @@ var Authentication = function(app, users) {
 
     app.use(function (err, req, res, next) {
         if (err.name === 'UnauthorizedError') {
-            res.status(401).json({ reason: "UNAUTHORIZED_REQUEST"})
+            return next({ reason: "UNAUTHORIZED_REQUEST"});
         }
+        next(err);
     });
 
-    app.post("/login", function(req, res) {
+    app.post("/login", function(req, res, next) {
         users.verifyPassword(req.body.username, req.body.password)
             .then(user => {
                 let token = jwt.sign({ id:user.id }, JWT_SECRET);
                 res.status(200).json(token);
             })
-            .catch(error => {
-                if(error.reason === "INVALID_CREDENTIALS") {
-                    res.status(401).json(error);
-                }
-            });
+            .catch(next);
     });
 }
 

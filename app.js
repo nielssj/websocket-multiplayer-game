@@ -27,17 +27,15 @@ var users;
 var games;
 var gamesManager;
 
-app.get('/memory/player', function(req, res) {
+app.get('/memory/player', function(req, res, next) {
     let playerId = req.user.id;
     users.findOne({id:playerId})
         .then(res.json)
-        .catch(err => {
-            errorHandling(res, err);
-        });
+        .catch(next);
 });
 
 // Conncet to database
-r.connect({ host:"172.17.0.2", port:28015 })
+r.connect({ host:"localhost", port:28015 })
     .then(conn => {
         // Initialize repositories
         games = new GameRepository(conn);
@@ -47,6 +45,8 @@ r.connect({ host:"172.17.0.2", port:28015 })
         // Initialize handlers
         authentication(app, users);
         memoryHandler(app, gamesManager);
+        // Attach error handler
+        app.use(errorHandling);
         // Start listening for requests
         http.listen(3000, function() {
             var port = http.address().port;
@@ -55,9 +55,13 @@ r.connect({ host:"172.17.0.2", port:28015 })
     })
     .catch(err => console.log("Failed to start server: " + err));
 
-function errorHandling(res, err) {
+function errorHandling(err, req, res, next) {
     if(err) {
         switch (err.reason) {
+            case "INVALID_CREDENTIALS":
+            case "UNAUTHORIZED_REQUEST":
+                res.status(401).json(err);
+                return;
             case "INVALID_MOVE":
                 res.status(400).json(err);
                 return;
@@ -68,8 +72,9 @@ function errorHandling(res, err) {
             case "USER_NOT_FOUND":
                 res.status(404).json(err);
                 return;
-            default:
-                res.status(500).send(err);
+          default:
+                console.error(err.stack);
+                res.status(500).json(err.stack); // FIXME: Hide in production
                 return;
         }
     } else {
