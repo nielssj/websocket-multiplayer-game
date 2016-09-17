@@ -9,7 +9,13 @@ See other repo for client (react-redux):
 https://github.com/nielssj/websocket-multiplayer-game-client
 
 ## Usage
+- Run instance:
 ```text
 npm install
 npm start
+```
+
+- Run tests:
+```text
+npm run test
 ```
