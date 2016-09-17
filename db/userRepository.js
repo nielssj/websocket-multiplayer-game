@@ -21,30 +21,52 @@ class UserRepository {
         };
     }
 
+    createUser(user) {
+      return r.table('users')
+        .insert({ username: user.username, password: user.password}, {returnChanges: true})
+        .run(this.conn)
+        .then(result => {
+          return result.changes[0].new_val
+        })
+    }
+
     findOne(query) {
         if(query.id) {
             return r.table("users")
                 .get(query.id)
-                .without("password")
                 .run(this.conn)
                 .catch(error => {
                     if(error.name === "ReqlNonExistenceError") {
                         throw { reason:"USER_NOT_FOUND" }
                     }
+                    throw error
                 })
         }
         if(query.username) {
             return r.table("users")
                 .getAll(query.username, {index: "username"})
-                .without("password")
                 .nth(0)
                 .run(this.conn)
                 .catch(error => {
                     if(error.name === "ReqlNonExistenceError") {
                         throw { reason:"USER_NOT_FOUND" }
                     }
+                    throw error
                 })
         }
+    }
+
+    exists(username) {
+      return this.findOne({ username: username })
+        .then(existingUser => {
+          return true;
+        })
+        .catch(err => {
+          if(err.reason == "USER_NOT_FOUND") {
+            return false;
+          }
+          throw err
+        })
     }
 
     verifyPassword(username, password) {

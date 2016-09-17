@@ -12,6 +12,17 @@ before(function() {
 });
 
 describe("UserRepository", function() {
+    it("creates a user", function() {
+      return users.createUser({ username:"john", password:1234 })
+        .then(user => {
+          expect(user, "to have key", "username");
+          expect(user.username, "to be", "john");
+          expect(user, "to have key", "password");
+          expect(user.password, "to be", 1234);
+          expect(user, "to have key", "id")
+        })
+    })
+
     it("finds a user based on username", function() {
         return users.findOne({username:"john"})
             .then(user => {
