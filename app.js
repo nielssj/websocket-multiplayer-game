@@ -70,6 +70,8 @@ function errorHandling(err, req, res, next) {
             case "USER_NOT_FOUND":
                 res.status(404).json(err);
                 return;
+            case "USER_ALREADY_EXISTS":
+                res.status(400).json(err)
           default:
                 console.error(err.stack);
                 res.status(500).json(err.stack); // FIXME: Hide in production
@@ -79,3 +81,5 @@ function errorHandling(err, req, res, next) {
         res.status(500).send();
     }
 }
+
+module.exports = http
