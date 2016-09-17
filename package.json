@@ -1,5 +1,5 @@
 {
-  "name": "server-interview",
+  "name": "websocket-multiplayer-game",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
